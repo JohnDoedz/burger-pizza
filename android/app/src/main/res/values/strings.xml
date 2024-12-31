@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Burger-Pizza</string>
+    <string name="title_activity_main">Burger-Pizza</string>
+    <string name="package_name">com.burgerpizza.app</string>
+    <string name="custom_url_scheme">com.burgerpizza.app</string>
+</resources>

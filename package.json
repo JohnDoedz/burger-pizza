@@ -1,0 +1,46 @@
+{
+  "name": "burger-pizza",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Application de commande de burgers et pizzas",
+  "main": "index.html",
+  "scripts": {
+    "start": "http-server . --cors -p 8080",
+    "build": "mkdir -p dist && cp -r * dist/ || true",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "keywords": ["food", "delivery", "pwa"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
+    "cra-template": "1.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^5.0.0",
+    "http-server": "^14.1.1"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

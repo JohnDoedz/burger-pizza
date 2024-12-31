@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#4CAF50">
+    <title>Burger-Pizza</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker enregistré!');
+                    })
+                    .catch(err => {
+                        console.log('Erreur d\'enregistrement du Service Worker:', err);
+                    });
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Burger-Pizza</h1>
+        </header>
+        
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="burgers">Burgers</button>
+            <button class="tab-btn" data-tab="pizzas">Pizzas</button>
+            <button class="tab-btn" data-tab="boissons">Boissons</button>
+        </nav>
+
+        <main>
+            <div class="tab-content active" id="burgers">
+                <div class="products-grid">
+                    <div class="product-card">
+                        <img src="images/classic-burger.jpg" alt="Classic Burger">
+                        <h3>Classic Burger</h3>
+                        <p>8.50 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <img src="images/cheese-burger.jpg" alt="Cheese Burger">
+                        <h3>Cheese Burger</h3>
+                        <p>9.50 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="pizzas">
+                <div class="products-grid">
+                    <div class="product-card">
+                        <img src="images/margherita.jpg" alt="Pizza Margherita">
+                        <h3>Margherita</h3>
+                        <p>10.00 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <img src="images/pepperoni.jpg" alt="Pizza Pepperoni">
+                        <h3>Pepperoni</h3>
+                        <p>12.00 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="boissons">
+                <div class="products-grid">
+                    <div class="product-card">
+                        <img src="images/cola.jpg" alt="Cola">
+                        <h3>Cola</h3>
+                        <p>2.50 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                    <div class="product-card">
+                        <img src="images/water.jpg" alt="Eau minérale">
+                        <h3>Eau minérale</h3>
+                        <p>1.50 €</p>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn minus">-</button>
+                            <span class="quantity">0</span>
+                            <button class="quantity-btn plus">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <div class="cart">
+            <h2>Panier</h2>
+            <div class="cart-items">
+                <!-- Les articles du panier seront ajoutés ici dynamiquement -->
+            </div>
+            <div class="cart-total">
+                <p>Total: <span id="total-price">0.00 €</span></p>
+                <button class="order-btn">Commander</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de commande -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header">
+                <h2>Finaliser la commande</h2>
+            </div>
+            <form id="orderForm">
+                <div class="form-group">
+                    <label for="name">Nom</label>
+                    <input type="text" id="name" name="name" required>
+                    <div class="error-message" id="nameError">Veuillez entrer votre nom</div>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Mobile</label>
+                    <input type="tel" id="phone" name="phone" class="phone-format" 
+                           placeholder="__ __ __ __ __" maxlength="14" required>
+                    <div class="error-message" id="phoneError">Numéro de téléphone invalide</div>
+                </div>
+                <div class="form-group">
+                    <label for="address-search">Votre adresse de livraison</label>
+                    <input type="text" id="address-search" placeholder="Entrez votre adresse">
+                    <button type="button" id="search-address-btn" class="search-address-btn">
+                        🔍 Chercher
+                    </button>
+                </div>
+                <div class="map-container">
+                    <div id="delivery-map"></div>
+                    <button type="button" id="locate-me" class="locate-btn">
+                        📍 Me localiser
+                    </button>
+                </div>
+                <div class="delivery-info">
+                    <p>Frais de livraison : <strong>3.00 €</strong></p>
+                </div>
+                <button type="submit" class="submit-btn">Confirmer la commande</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
