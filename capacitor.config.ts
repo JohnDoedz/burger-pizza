@@ -6,6 +6,12 @@ const config: CapacitorConfig = {
   webDir: 'www',
   server: {
     androidScheme: 'https'
+  },
+  android: {
+    icon: 'icons/icon192.png'
+  },
+  ios: {
+    icon: 'icons/icon192.png'
   }
 };
 

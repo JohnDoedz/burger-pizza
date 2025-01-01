@@ -2,7 +2,7 @@
     "name": "Burger-Pizza",
     "short_name": "Burger-Pizza",
     "description": "Application de commande de burgers et pizzas",
-    "start_url": "./index.html",
+    "start_url": "index.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#4CAF50",
@@ -10,33 +10,32 @@
     "scope": "./",
     "icons": [
         {
-            "src": "icons/icon-48x48.png",
-            "sizes": "48x48",
+            "src": "icons/icon64.png",
+            "sizes": "64x64",
             "type": "image/png"
         },
         {
-            "src": "icons/icon-72x72.png",
-            "sizes": "72x72",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/icon-96x96.png",
+            "src": "icons/icon96.png",
             "sizes": "96x96",
             "type": "image/png"
         },
         {
-            "src": "icons/icon-144x144.png",
-            "sizes": "144x144",
+            "src": "icons/icon128.png",
+            "sizes": "128x128",
             "type": "image/png"
         },
         {
-            "src": "icons/icon-192x192.png",
+            "src": "icons/icon192.png",
             "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
+            "type": "image/png"
         },
         {
-            "src": "icons/icon-512x512.png",
+            "src": "icons/icon256.png",
+            "sizes": "256x256",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/icon512.png",
             "sizes": "512x512",
             "type": "image/png"
         }
