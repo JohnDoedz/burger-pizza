@@ -197,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         
         const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
         const phone = phoneInput.value.replace(/\s/g, '');
         let isValid = true;
 
@@ -206,6 +207,14 @@ document.addEventListener('DOMContentLoaded', () => {
             isValid = false;
         } else {
             document.getElementById('nameError').style.display = 'none';
+        }
+
+        // Validation de l'email
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+            document.getElementById('emailError').style.display = 'block';
+            isValid = false;
+        } else {
+            document.getElementById('emailError').style.display = 'none';
         }
 
         // Validation du numéro de téléphone
@@ -220,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Traitement de la commande
             const orderDetails = {
                 name: name,
+                email: email,
                 phone: phone,
                 items: cart.items,
                 total: cart.total
