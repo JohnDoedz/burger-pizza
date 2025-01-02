@@ -112,51 +112,94 @@ document.addEventListener('DOMContentLoaded', () => {
     let deliveryMap = null;
     let marker = null;
 
-    // Fonction d'initialisation de la carte
-    function initMap() {
-        // Coordonnées par défaut (Paris - à adapter selon votre ville)
-        const defaultLocation = [48.8566, 2.3522];
-        
-        deliveryMap = L.map('delivery-map').setView([36.7507, 5.0556], 15);
-        
+    // Fonction pour initialiser la carte
+    function initDeliveryMap() {
+        // Vérifier si l'élément de carte existe
+        const mapElement = document.getElementById('delivery-map');
+        const locateMeBtn = document.getElementById('locate-me');
+        if (!mapElement) {
+            console.error('Élément #delivery-map non trouvé');
+            return;
+        }
+
+        // Coordonnées du restaurant
+        const restaurantCoords = [36.7507, 5.0556];
+
+        // Initialiser la carte
+        const map = L.map('delivery-map').setView(restaurantCoords, 15);
+
+        // Ajouter les tuiles OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: ' OpenStreetMap contributors'
-        }).addTo(deliveryMap);
+        }).addTo(map);
 
         // Ajouter un marqueur pour le restaurant
-        L.marker([36.7507, 5.0556])
-            .addTo(deliveryMap)
-            .bindPopup('Burger-Pizza<br>10 Naciriya, Cité 196 Logements<br>Bâtiment 06, Béjaïa')
-            .openPopup();
+        const restaurantMarker = L.marker(restaurantCoords)
+            .addTo(map)
+            .bindPopup('Burger-Pizza<br>10 Naciriya, Cité 196 Logements<br>Bâtiment 06, Béjaïa');
 
-        // Ajouter un marqueur lors du clic
-        deliveryMap.on('click', function(e) {
-            if (marker) {
-                deliveryMap.removeLayer(marker);
+        // Variable pour stocker le marqueur de localisation
+        let userMarker = null;
+
+        // Fonction de localisation
+        function handleLocationFound(e) {
+            // Supprimer le marqueur précédent s'il existe
+            if (userMarker) {
+                map.removeLayer(userMarker);
             }
-            marker = L.marker(e.latlng).addTo(deliveryMap);
-            updateDeliveryLocation(e.latlng);
-        });
 
-        // Gérer la géolocalisation
-        deliveryMap.on('locationfound', function(e) {
-            if (marker) {
-                deliveryMap.removeLayer(marker);
+            // Ajouter un nouveau marqueur à la position de l'utilisateur
+            userMarker = L.marker(e.latlng)
+                .addTo(map)
+                .bindPopup('Votre position')
+                .openPopup();
+
+            // Centrer la carte sur la position de l'utilisateur
+            map.setView(e.latlng, 15);
+
+            // Optionnel : Calculer la distance entre le restaurant et l'utilisateur
+            const distance = map.distance(restaurantCoords, e.latlng);
+            alert(`Distance du restaurant : ${(distance / 1000).toFixed(2)} km`);
+        }
+
+        // Gestion des erreurs de localisation
+        function handleLocationError(e) {
+            alert("Impossible de vous localiser. Veuillez :\n- Vérifier vos paramètres de localisation\n- Autoriser l'accès à votre position\n- Réessayer");
+            console.error("Erreur de localisation :", e.message);
+        }
+
+        // Événements de localisation
+        map.on('locationfound', handleLocationFound);
+        map.on('locationerror', handleLocationError);
+
+        // Bouton de localisation
+        if (locateMeBtn) {
+            locateMeBtn.addEventListener('click', function() {
+                // Options de localisation
+                const options = {
+                    enableHighAccuracy: true,  // Utiliser le GPS si possible
+                    timeout: 10000,            // Délai de 10 secondes
+                    maximumAge: 0              // Ne pas utiliser de position en cache
+                };
+
+                // Demander la localisation
+                map.locate(options);
+            });
+        }
+
+        // Ajouter un gestionnaire de clic pour ajouter des marqueurs manuellement
+        map.on('click', function(e) {
+            // Supprimer le marqueur précédent s'il existe
+            if (userMarker) {
+                map.removeLayer(userMarker);
             }
-            marker = L.marker(e.latlng).addTo(deliveryMap);
-            updateDeliveryLocation(e.latlng);
-        });
-
-        deliveryMap.on('locationerror', function(e) {
-            alert("Impossible d'accéder à votre position. Veuillez l'autoriser dans votre navigateur ou sélectionner manuellement votre position sur la carte.");
+            // Ajouter un nouveau marqueur
+            userMarker = L.marker(e.latlng).addTo(map);
         });
     }
 
-    // Mettre à jour les informations de livraison
-    function updateDeliveryLocation(latlng) {
-        // Ici on pourrait ajouter la logique pour récupérer l'adresse via l'API OpenStreetMap
-        console.log('Position sélectionnée:', latlng);
-    }
+    // Appeler la fonction d'initialisation une fois le DOM chargé
+    document.addEventListener('DOMContentLoaded', initDeliveryMap);
 
     // Ouvrir le modal
     orderBtn.addEventListener('click', function() {
@@ -165,7 +208,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Petit délai pour s'assurer que le modal est visible
             setTimeout(() => {
                 if (!deliveryMap) {
-                    initMap();
+                    initDeliveryMap();
                 }
                 // Mettre à jour la taille de la carte
                 if (deliveryMap) {
