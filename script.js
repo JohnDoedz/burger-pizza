@@ -1,540 +1,180 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Gestion des onglets
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+// Débogage et utilitaires
+const DEBUG = true;
 
-    tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Retirer la classe active de tous les boutons et contenus
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(content => content.classList.remove('active'));
+function debugLog(...args) {
+    if (DEBUG) {
+        console.log('[BURGER-PIZZA DEBUG]', ...args);
+    }
+}
 
-            // Ajouter la classe active au bouton cliqué et au contenu correspondant
-            btn.classList.add('active');
-            const tabId = btn.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
-        });
-    });
-
-    // Gestion du panier
-    const cart = {
-        items: [],
-        total: 0
-    };
-
-    // Fonction pour mettre à jour l'affichage du panier
-    function updateCartDisplay() {
-        const cartItemsContainer = document.querySelector('.cart-items');
-        const totalPriceElement = document.getElementById('total-price');
-        
-        // Vider le contenu actuel du panier
-        cartItemsContainer.innerHTML = '';
-        
-        // Ajouter chaque article du panier
-        cart.items.forEach(item => {
-            if (item.quantity > 0) {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <span>${item.name} x${item.quantity}</span>
-                    <span>${(item.price * item.quantity).toFixed(2)} D.A</span>
-                `;
-                cartItemsContainer.appendChild(cartItem);
-            }
-        });
-        
-        // Mettre à jour le total
-        totalPriceElement.textContent = `${cart.total.toFixed(2)} D.A`;
+// Gestion de la carte de livraison
+class DeliveryMapManager {
+    constructor() {
+        this.map = null;
+        this.userMarker = null;
+        this.restaurantCoords = [36.7507, 5.0556];
+        this.restaurantAddress = "10 Naciriya, Cité 196 Logements, Bâtiment 06, Béjaïa, Algérie";
     }
 
-    // Gestion des boutons + et -
-    const productCards = document.querySelectorAll('.product-card');
-    
-    productCards.forEach(card => {
-        const minusBtn = card.querySelector('.minus');
-        const plusBtn = card.querySelector('.plus');
-        const quantitySpan = card.querySelector('.quantity');
-        const productName = card.querySelector('h3').textContent;
-        const productPriceText = card.querySelector('p').textContent;
-        const productPrice = parseFloat(productPriceText.replace(/[^0-9.,]+/g, '').replace(',', '.'));
+    initMap() {
+        debugLog('Tentative d\'initialisation de la carte');
         
-        let quantity = 0;
-        
-        plusBtn.addEventListener('click', () => {
-            quantity++;
-            quantitySpan.textContent = quantity;
-            
-            // Mettre à jour le panier
-            updateCart(productName, productPrice, quantity);
-        });
-        
-        minusBtn.addEventListener('click', () => {
-            if (quantity > 0) {
-                quantity--;
-                quantitySpan.textContent = quantity;
-                
-                // Mettre à jour le panier
-                updateCart(productName, productPrice, quantity);
-            }
-        });
-    });
-
-    // Fonction pour mettre à jour le panier
-    function updateCart(productName, productPrice, quantity) {
-        let item = cart.items.find(item => item.name === productName);
-        
-        if (item) {
-            // Mettre à jour la quantité si l'article existe déjà
-            cart.total -= item.price * item.quantity;
-            item.quantity = quantity;
-            cart.total += item.price * item.quantity;
-        } else {
-            // Ajouter un nouvel article
-            cart.items.push({
-                name: productName,
-                price: productPrice,
-                quantity: quantity
-            });
-            cart.total += productPrice * quantity;
-        }
-        
-        updateCartDisplay();
-    }
-
-    // Gestion du modal
-    const modal = document.getElementById('orderModal');
-    const orderBtn = document.querySelector('.order-btn');
-    const closeModal = document.querySelector('.close-modal');
-    const orderForm = document.getElementById('orderForm');
-    const phoneInput = document.getElementById('phone');
-
-    // Variables pour la carte
-    let deliveryMap = null;
-    let marker = null;
-
-    // Fonction pour initialiser la carte
-    function initDeliveryMap() {
-        // Vérifier si l'élément de carte existe
-        const mapElement = document.getElementById('delivery-map');
+        const mapContainer = document.getElementById('delivery-map');
         const locateMeBtn = document.getElementById('locate-me');
-        if (!mapElement) {
-            console.error('Élément #delivery-map non trouvé');
+
+        if (!mapContainer) {
+            debugLog('Conteneur de carte introuvable');
+            return false;
+        }
+
+        try {
+            this.map = L.map(mapContainer, {
+                center: this.restaurantCoords,
+                zoom: 15,
+                attributionControl: true,
+                zoomControl: true
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: ' OpenStreetMap contributors'
+            }).addTo(this.map);
+
+            this.geocodeRestaurantLocation();
+            this.setupLocationTracking(locateMeBtn);
+
+            debugLog('Carte initialisée avec succès');
+            return true;
+        } catch (error) {
+            console.error('Erreur lors de l\'initialisation de la carte :', error);
+            return false;
+        }
+    }
+
+    geocodeRestaurantLocation() {
+        const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(this.restaurantAddress)}`;
+
+        fetch(nominatimUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+
+                    this.map.setView([lat, lon], 15);
+                    L.marker([lat, lon])
+                        .addTo(this.map)
+                        .bindPopup(this.restaurantAddress)
+                        .openPopup();
+
+                    debugLog('Localisation du restaurant géocodée :', lat, lon);
+                } else {
+                    debugLog('Aucune coordonnée trouvée pour l\'adresse');
+                    this.map.setView(this.restaurantCoords, 15);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur de géocodage :', error);
+                this.map.setView(this.restaurantCoords, 15);
+            });
+    }
+
+    setupLocationTracking(locateMeBtn) {
+        if (!locateMeBtn) {
+            debugLog('Bouton de localisation non trouvé');
             return;
         }
 
-        // Coordonnées du restaurant
-        const restaurantCoords = [36.7507, 5.0556];
+        locateMeBtn.addEventListener('click', () => {
+            debugLog('Bouton "Me localiser" cliqué');
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
 
-        // Initialiser la carte
-        const map = L.map('delivery-map').setView(restaurantCoords, 15);
+            this.map.locate(options);
+        });
 
-        // Ajouter les tuiles OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: ' OpenStreetMap contributors'
-        }).addTo(map);
+        this.map.on('locationfound', (e) => {
+            debugLog('Position trouvée :', e.latlng);
 
-        // Ajouter un marqueur pour le restaurant
-        const restaurantMarker = L.marker(restaurantCoords)
-            .addTo(map)
-            .bindPopup('Burger-Pizza<br>10 Naciriya, Cité 196 Logements<br>Bâtiment 06, Béjaïa');
-
-        // Variable pour stocker le marqueur de localisation
-        let userMarker = null;
-
-        // Fonction de localisation
-        function handleLocationFound(e) {
-            // Supprimer le marqueur précédent s'il existe
-            if (userMarker) {
-                map.removeLayer(userMarker);
+            if (this.userMarker) {
+                this.map.removeLayer(this.userMarker);
             }
 
-            // Ajouter un nouveau marqueur à la position de l'utilisateur
-            userMarker = L.marker(e.latlng)
-                .addTo(map)
+            this.userMarker = L.marker(e.latlng)
+                .addTo(this.map)
                 .bindPopup('Votre position')
                 .openPopup();
 
-            // Centrer la carte sur la position de l'utilisateur
-            map.setView(e.latlng, 15);
+            this.map.setView(e.latlng, 15);
 
-            // Optionnel : Calculer la distance entre le restaurant et l'utilisateur
-            const distance = map.distance(restaurantCoords, e.latlng);
+            const distance = this.map.distance(this.restaurantCoords, e.latlng);
             alert(`Distance du restaurant : ${(distance / 1000).toFixed(2)} km`);
-        }
+        });
 
-        // Gestion des erreurs de localisation
-        function handleLocationError(e) {
-            alert("Impossible de vous localiser. Veuillez :\n- Vérifier vos paramètres de localisation\n- Autoriser l'accès à votre position\n- Réessayer");
-            console.error("Erreur de localisation :", e.message);
-        }
-
-        // Événements de localisation
-        map.on('locationfound', handleLocationFound);
-        map.on('locationerror', handleLocationError);
-
-        // Bouton de localisation
-        if (locateMeBtn) {
-            locateMeBtn.addEventListener('click', function() {
-                // Options de localisation
-                const options = {
-                    enableHighAccuracy: true,  // Utiliser le GPS si possible
-                    timeout: 10000,            // Délai de 10 secondes
-                    maximumAge: 0              // Ne pas utiliser de position en cache
-                };
-
-                // Demander la localisation
-                map.locate(options);
-            });
-        }
-
-        // Ajouter un gestionnaire de clic pour ajouter des marqueurs manuellement
-        map.on('click', function(e) {
-            // Supprimer le marqueur précédent s'il existe
-            if (userMarker) {
-                map.removeLayer(userMarker);
-            }
-            // Ajouter un nouveau marqueur
-            userMarker = L.marker(e.latlng).addTo(map);
+        this.map.on('locationerror', (e) => {
+            console.error('Erreur de localisation :', e);
+            alert("Impossible de vous localiser. Veuillez vérifier vos paramètres.");
         });
     }
+}
 
-    // Appeler la fonction d'initialisation une fois le DOM chargé
-    document.addEventListener('DOMContentLoaded', initDeliveryMap);
+// Initialisation globale
+function initializeApplication() {
+    debugLog('Initialisation de l\'application');
 
-    // Ouvrir le modal
-    orderBtn.addEventListener('click', function() {
-        if (cart.items.length > 0 && cart.total > 0) {
-            modal.style.display = 'block';
-            // Petit délai pour s'assurer que le modal est visible
+    const orderBtn = document.querySelector('.order-btn');
+    const orderModal = document.getElementById('orderModal');
+
+    if (!orderBtn || !orderModal) {
+        debugLog('Éléments essentiels manquants');
+        return;
+    }
+
+    const deliveryMapManager = new DeliveryMapManager();
+
+    orderBtn.addEventListener('click', () => {
+        debugLog('Bouton de commande cliqué');
+        
+        const cart = JSON.parse(localStorage.getItem('cart') || '{}');
+        if (cart.items && cart.items.length > 0 && cart.total > 0) {
+            orderModal.style.display = 'block';
+            
             setTimeout(() => {
-                if (!deliveryMap) {
-                    initDeliveryMap();
-                }
-                // Mettre à jour la taille de la carte
-                if (deliveryMap) {
-                    deliveryMap.invalidateSize();
-                }
-            }, 100);
+                deliveryMapManager.initMap();
+            }, 200);
         } else {
             alert('Votre panier est vide !');
         }
     });
 
-    // Fermer le modal
-    closeModal.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    // Fermer le modal en cliquant en dehors
-    window.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.style.display = 'none';
-        }
-    });
-
-    // Formater le numéro de téléphone
-    phoneInput.addEventListener('input', (e) => {
-        let value = e.target.value.replace(/\D/g, ''); // Garder uniquement les chiffres
-        if (value.length > 0) {
-            value = value.match(new RegExp('.{1,2}', 'g')).join(' ');
-        }
-        e.target.value = value;
-    });
-
-    // Validation du formulaire
-    orderForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const phone = phoneInput.value.replace(/\s/g, '');
-        let isValid = true;
-
-        // Validation du nom
-        if (name.length < 2) {
-            document.getElementById('nameError').style.display = 'block';
-            isValid = false;
-        } else {
-            document.getElementById('nameError').style.display = 'none';
-        }
-
-        // Validation de l'email
-        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-            document.getElementById('emailError').style.display = 'block';
-            isValid = false;
-        } else {
-            document.getElementById('emailError').style.display = 'none';
-        }
-
-        // Validation du numéro de téléphone
-        if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
-            document.getElementById('phoneError').style.display = 'block';
-            isValid = false;
-        } else {
-            document.getElementById('phoneError').style.display = 'none';
-        }
-
-        if (isValid) {
-            // Traitement de la commande
-            const orderDetails = {
-                name: name,
-                email: email,
-                phone: phone,
-                items: cart.items,
-                total: cart.total
-            };
-            
-            console.log('Commande validée:', orderDetails);
-            alert('Commande validée ! Nous vous contacterons bientôt.');
-            
-            // Réinitialiser le formulaire et fermer le modal
-            orderForm.reset();
-            modal.style.display = 'none';
-            
-            // Réinitialiser le panier
-            cart.items = [];
-            cart.total = 0;
-            document.querySelectorAll('.quantity').forEach(span => span.textContent = '0');
-            updateCartDisplay();
-        }
-    });
-
-    // Ajouter l'événement pour le bouton de géolocalisation une fois que le DOM est chargé
-    document.addEventListener('DOMContentLoaded', function() {
-        const locateBtn = document.getElementById('locate-me');
-        if (locateBtn) {
-            locateBtn.addEventListener('click', function() {
-                if (deliveryMap) {
-                    deliveryMap.locate({setView: true, maxZoom: 16});
-                }
-            });
-        }
-    });
-
-    // Fonction pour rechercher une adresse
-    async function searchAddress(query) {
-        try {
-            const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-            const data = await response.json();
-            return data;
-        } catch (error) {
-            console.error('Erreur lors de la recherche d\'adresse:', error);
-            return [];
-        }
-    }
-
-    // Ajouter la gestion de la recherche d'adresse
-    const addressInput = document.getElementById('address-search');
-    const searchAddressBtn = document.getElementById('search-address-btn');
-
-    searchAddressBtn.addEventListener('click', async function() {
-        const query = addressInput.value;
-        if (query.length > 0) {
-            const results = await searchAddress(query);
-            if (results.length > 0) {
-                const location = results[0]; // Prendre le premier résultat
-                const latlng = {
-                    lat: parseFloat(location.lat),
-                    lng: parseFloat(location.lon)
-                };
-                
-                // Centrer la carte et placer le marqueur
-                deliveryMap.setView([latlng.lat, latlng.lng], 16);
-                if (marker) {
-                    deliveryMap.removeLayer(marker);
-                }
-                marker = L.marker([latlng.lat, latlng.lng]).addTo(deliveryMap);
-            } else {
-                alert('Adresse non trouvée. Veuillez réessayer.');
-            }
-        } else {
-            alert('Veuillez entrer une adresse.');
-        }
-    });
-
-    // Permettre la recherche en appuyant sur Entrée
-    addressInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault(); // Empêcher la soumission du formulaire
-            searchAddressBtn.click();
-        }
-    });
-
-    // Gestion de la notation
-    const ratingModal = document.getElementById('ratingModal');
-    const ratingModalCloseBtn = ratingModal.querySelector('.close-modal');
-    const stars = ratingModal.querySelectorAll('.star');
-    const ratingForm = document.getElementById('ratingForm');
-    const commentTextarea = document.getElementById('comment');
-    const charCount = document.querySelector('.char-count');
-    let selectedRating = 0;
-
-    // Gestion des étoiles
-    stars.forEach(star => {
-        star.addEventListener('mouseover', () => {
-            const rating = parseInt(star.getAttribute('data-rating'));
-            highlightStars(rating);
-        });
-
-        star.addEventListener('mouseout', () => {
-            highlightStars(selectedRating);
-        });
-
-        star.addEventListener('click', () => {
-            selectedRating = parseInt(star.getAttribute('data-rating'));
-            highlightStars(selectedRating);
+    const closeModalButtons = document.querySelectorAll('.close-modal');
+    closeModalButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            orderModal.style.display = 'none';
         });
     });
+}
 
-    function highlightStars(rating) {
-        stars.forEach(star => {
-            const starRating = parseInt(star.getAttribute('data-rating'));
-            if (starRating <= rating) {
-                star.classList.add('active');
-            } else {
-                star.classList.remove('active');
-            }
+// Lancement
+document.addEventListener('DOMContentLoaded', initializeApplication);
+
+// Gestion des onglets
+document.addEventListener('DOMContentLoaded', () => {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            btn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
         });
-    }
-
-    // Compteur de caractères
-    commentTextarea.addEventListener('input', () => {
-        const currentLength = commentTextarea.value.length;
-        charCount.textContent = `${currentLength} / 500`;
-        
-        if (currentLength > 500) {
-            commentTextarea.value = commentTextarea.value.slice(0, 500);
-            charCount.textContent = '500 / 500';
-        }
     });
-
-    // Validation du formulaire de notation
-    function validateRatingForm() {
-        if (selectedRating === 0) {
-            alert('Veuillez sélectionner une note');
-            return false;
-        }
-
-        const comment = commentTextarea.value.trim();
-        if (comment.length > 500) {
-            alert('Le commentaire ne doit pas dépasser 500 caractères');
-            return false;
-        }
-
-        return true;
-    }
-
-    // Soumission du formulaire de notation
-    ratingForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        // Validation
-        if (!validateRatingForm()) {
-            return;
-        }
-
-        const name = document.getElementById('review-name').value.trim() || 'Anonyme';
-        const comment = commentTextarea.value.trim();
-
-        // Stocker l'avis dans localStorage
-        const review = {
-            name: name,
-            rating: selectedRating,
-            comment: comment,
-            date: new Date().toISOString()
-        };
-
-        // Récupérer les avis existants
-        let reviews = JSON.parse(localStorage.getItem('restaurantReviews') || '[]');
-        reviews.push(review);
-
-        // Limiter à 50 derniers avis
-        if (reviews.length > 50) {
-            reviews = reviews.slice(-50);
-        }
-
-        localStorage.setItem('restaurantReviews', JSON.stringify(reviews));
-
-        // Afficher un message de remerciement personnalisé
-        let thankYouMessage = 'Merci pour votre avis !';
-        switch (selectedRating) {
-            case 5:
-                thankYouMessage += ' Nous sommes ravis que vous ayez adoré notre service !';
-                break;
-            case 4:
-                thankYouMessage += ' Merci pour votre retour positif !';
-                break;
-            case 3:
-                thankYouMessage += ' Nous travaillons constamment à améliorer notre service.';
-                break;
-            case 2:
-            case 1:
-                thankYouMessage += ' Nous prenons en compte vos remarques pour nous améliorer.';
-                break;
-        }
-
-        alert(thankYouMessage);
-        
-        // Réinitialiser le formulaire
-        ratingForm.reset();
-        selectedRating = 0;
-        highlightStars(0);
-        charCount.textContent = '0 / 500';
-        
-        // Fermer le modal
-        ratingModal.style.display = 'none';
-    });
-
-    // Bouton pour ouvrir le modal de notation
-    const openRatingModalBtn = document.createElement('button');
-    openRatingModalBtn.textContent = 'Donner un avis';
-    openRatingModalBtn.classList.add('rating-btn');
-    openRatingModalBtn.addEventListener('click', () => {
-        ratingModal.style.display = 'block';
-    });
-    
-    const footer = document.querySelector('footer');
-    if (footer) {
-        footer.appendChild(openRatingModalBtn);
-    }
-
-    // Fermer le modal de notation
-    ratingModalCloseBtn.addEventListener('click', () => {
-        ratingModal.style.display = 'none';
-    });
-
-    // Calculer la note moyenne
-    function calculateAverageRating(reviews) {
-        if (reviews.length === 0) return 0;
-        
-        const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
-        return totalRating / reviews.length;
-    }
-
-    // Afficher les statistiques des avis (gardé pour le développement)
-    function displayReviewStats() {
-        const reviews = JSON.parse(localStorage.getItem('restaurantReviews') || '[]');
-        const averageRating = calculateAverageRating(reviews);
-        const totalReviews = reviews.length;
-
-        console.log(`Statistiques des avis :`);
-        console.log(`Nombre total d'avis : ${totalReviews}`);
-        console.log(`Note moyenne : ${averageRating.toFixed(1)} / 5`);
-    }
-
-    // Appeler cette fonction pour voir les statistiques
-    displayReviewStats();
-
-    // Enregistrement du service worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js')
-                .then(function(registration) {
-                    console.log('ServiceWorker registration successful');
-                })
-                .catch(function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-        });
-    }
 });

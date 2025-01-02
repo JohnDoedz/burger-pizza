@@ -169,117 +169,105 @@ header h1 {
 .modal {
     display: none;
     position: fixed;
-    top: 0;
+    z-index: 1000;
     left: 0;
+    top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.5);
 }
 
 .modal-content {
     position: relative;
     background-color: white;
-    margin: 20px;
+    margin: 10% auto;
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 10px;
     max-width: 500px;
-    margin: 20px auto;
-    max-height: 80vh; /* Limite la hauteur à 80% de la vue */
-    overflow-y: auto; /* Permet le défilement vertical */
-    padding-bottom: 60px; /* Espace supplémentaire pour le bouton */
+    width: 90%;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.5em;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-modal:hover {
+    color: #4CAF50;
 }
 
 .modal-content form {
     display: flex;
     flex-direction: column;
+    gap: 15px;
 }
 
 .modal-content input, 
 .modal-content textarea {
-    margin-bottom: 10px;
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus {
+    outline: none;
+    border-color: #4CAF50;
 }
 
 .submit-btn {
-    position: sticky; /* Bouton collant en bas */
-    bottom: 10px;
-    width: 100%;
-    margin-top: auto;
     background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
+    padding: 12px;
     font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
 }
 
 .submit-btn:hover {
     background-color: #45a049;
 }
 
-.modal-header {
-    margin-bottom: 20px;
-}
-
-.modal-header h2 {
-    margin: 0;
-    color: #333;
-}
-
-.close-modal {
-    position: absolute;
-    right: 20px;
-    top: 20px;
-    font-size: 24px;
-    cursor: pointer;
-    color: #666;
-}
-
-.form-group {
-    position: relative;
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: flex;
-    align-items: baseline;
-    margin-bottom: 10px;
-    font-weight: bold;
-    color: #333;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 12px;
+.map-container {
+    height: 300px;
+    margin: 15px 0;
+    border-radius: 8px;
+    overflow: hidden;
     border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
 }
 
-.form-group input:focus {
-    border-color: #4CAF50;
-    outline: none;
-}
-
-.error-message {
-    color: #ff0000;
-    font-size: 14px;
-    margin-top: 5px;
-    display: none;
-}
-
-.search-address-btn {
-    margin-left: 10px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 3px 8px;
-    font-size: 0.8em;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    line-height: 1;
+#delivery-map {
+    height: 100%;
+    width: 100%;
 }
 
 /* Style pour le format du numéro de téléphone */
@@ -289,20 +277,6 @@ header h1 {
 }
 
 /* Styles pour la carte */
-.map-container {
-    position: relative;
-    height: 300px;
-    margin: 15px 0;
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-#delivery-map {
-    height: 100%;
-    width: 100%;
-    z-index: 1;
-}
-
 .locate-btn {
     position: absolute;
     bottom: 20px;
