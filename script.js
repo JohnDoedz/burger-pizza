@@ -117,11 +117,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Coordonnées par défaut (Paris - à adapter selon votre ville)
         const defaultLocation = [48.8566, 2.3522];
         
-        deliveryMap = L.map('delivery-map').setView(defaultLocation, 13);
+        deliveryMap = L.map('delivery-map').setView([36.7507, 5.0556], 15);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: ' OpenStreetMap contributors'
         }).addTo(deliveryMap);
+
+        // Ajouter un marqueur pour le restaurant
+        L.marker([36.7507, 5.0556])
+            .addTo(deliveryMap)
+            .bindPopup('Burger-Pizza<br>10 Naciriya, Cité 196 Logements<br>Bâtiment 06, Béjaïa')
+            .openPopup();
 
         // Ajouter un marqueur lors du clic
         deliveryMap.on('click', function(e) {
