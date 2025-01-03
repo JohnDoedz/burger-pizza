@@ -144,12 +144,12 @@
             <form id="order-form">
                 <input type="text" id="name" placeholder="Votre nom" required>
                 <input type="email" id="email" placeholder="Votre email" required>
-                <input type="tel" id="phone" placeholder="Votre numéro de téléphone" pattern="[0-9]{10}" required>
+                <input type="tel" id="phone" placeholder="__ __ __ __ __" pattern="[0-9]{2} [0-9]{2} [0-9]{2} [0-9]{2} [0-9]{2}" required>
                 <div class="map-container">
                     <div id="delivery-map"></div>
                     <button id="locate-me" class="locate-btn">Me localiser</button>
                 </div>
-                <textarea id="order-details" placeholder="Détails de votre commande" required></textarea>
+                <textarea id="order-details" placeholder="Instructions spéciales. Ex: sans oignons.."></textarea>
                 <button type="submit" class="submit-btn">Envoyer ma commande</button>
             </form>
         </div>

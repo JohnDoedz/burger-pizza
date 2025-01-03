@@ -199,50 +199,63 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ajouter chaque article du panier
         cart.items.forEach(item => {
             if (item.quantity > 0) {
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <span>${item.name} x${item.quantity}</span>
+                const cartItemElement = document.createElement('div');
+                cartItemElement.classList.add('cart-item');
+                cartItemElement.innerHTML = `
+                    <span>${item.name}</span>
+                    <span>Qté: ${item.quantity}</span>
                     <span>${(item.price * item.quantity).toFixed(2)} D.A</span>
                 `;
-                cartItemsContainer.appendChild(cartItem);
+                cartItemsContainer.appendChild(cartItemElement);
             }
         });
-        
-        // Mettre à jour le total
+
+        // Mettre à jour le prix total
         totalPriceElement.textContent = `${cart.total.toFixed(2)} D.A`;
-        
-        console.log('Panier mis à jour :', cart);
+
+        // Sauvegarder le panier dans localStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
     }
 
     function updateCart(productName, productPrice, quantity) {
-        console.log(`Mise à jour du panier : ${productName}, Prix: ${productPrice}, Quantité: ${quantity}`);
+        // Trouver l'index de l'article existant
+        const existingItemIndex = cart.items.findIndex(item => item.name === productName);
         
-        let item = cart.items.find(item => item.name === productName);
-        
-        if (item) {
-            // Mettre à jour la quantité si l'article existe déjà
-            cart.total -= item.price * item.quantity;
-            item.quantity = quantity;
-            cart.total += item.price * item.quantity;
+        if (existingItemIndex !== -1) {
+            // Mettre à jour l'article existant
+            cart.items[existingItemIndex].quantity = quantity;
+            
+            // Recalculer le total
+            cart.total = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
         } else {
-            // Ajouter un nouvel article
-            cart.items.push({
-                name: productName,
-                price: productPrice,
-                quantity: quantity
-            });
-            cart.total += productPrice * quantity;
+            // Ajouter un nouvel article si la quantité est > 0
+            if (quantity > 0) {
+                cart.items.push({
+                    name: productName,
+                    price: productPrice,
+                    quantity: quantity
+                });
+                cart.total += productPrice * quantity;
+            }
         }
         
         updateCartDisplay();
     }
 
+    // Restaurer le panier depuis localStorage si existant
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+        const parsedCart = JSON.parse(savedCart);
+        cart.items = parsedCart.items;
+        cart.total = parsedCart.total;
+        updateCartDisplay();
+    }
+
     // Sélectionner tous les produits
     const productCards = document.querySelectorAll('.product-card');
-    console.log(`Nombre de cartes de produits trouvées : ${productCards.length}`);
+    console.log(`🔢 Nombre de cartes de produits trouvées : ${productCards.length}`);
     
-    productCards.forEach(card => {
+    productCards.forEach((card, index) => {
         const minusBtn = card.querySelector('.minus');
         const plusBtn = card.querySelector('.plus');
         const quantitySpan = card.querySelector('.quantity');
@@ -250,24 +263,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const productPriceText = card.querySelector('p').textContent;
         const productPrice = parseFloat(productPriceText.replace(/[^0-9.,]+/g, '').replace(',', '.'));
         
-        console.log(`Produit : ${productName}, Prix : ${productPrice}`);
+        console.log(`🍔 Produit #${index + 1}: ${productName}, Prix : ${productPrice}`);
         
         let quantity = 0;
         
         if (!minusBtn || !plusBtn || !quantitySpan) {
-            console.error(`Boutons ou quantité non trouvés pour ${productName}`);
+            console.error(`❌ Éléments manquants pour ${productName}:`, {
+                minusBtn: !!minusBtn,
+                plusBtn: !!plusBtn,
+                quantitySpan: !!quantitySpan
+            });
             return;
         }
         
-        plusBtn.addEventListener('click', () => {
-            console.log(`Bouton + cliqué pour ${productName}`);
+        console.log(`🔘 Configuration des boutons pour ${productName}`, {
+            minusBtnExists: !!minusBtn,
+            plusBtnExists: !!plusBtn,
+            quantitySpanExists: !!quantitySpan
+        });
+
+        plusBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            console.log(`➕ Bouton + cliqué pour ${productName}`);
             quantity++;
             quantitySpan.textContent = quantity;
             updateCart(productName, productPrice, quantity);
         });
         
-        minusBtn.addEventListener('click', () => {
-            console.log(`Bouton - cliqué pour ${productName}`);
+        minusBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            console.log(`➖ Bouton - cliqué pour ${productName}`);
             if (quantity > 0) {
                 quantity--;
                 quantitySpan.textContent = quantity;
@@ -275,4 +300,132 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const orderForm = document.getElementById('order-form');
+    const ratingModal = document.getElementById('ratingModal');
+
+    if (orderForm) {
+        orderForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            // Récupérer les données du formulaire
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value.replace(/\s/g, '');
+            const orderDetails = document.getElementById('order-details').value || 'Aucune instruction spéciale';
+
+            // Simuler l'envoi de la commande (à remplacer par un vrai backend)
+            console.log('Commande envoyée:', { name, email, phone, orderDetails });
+
+            // Fermer le modal de commande
+            const orderModal = document.getElementById('orderModal');
+            if (orderModal) {
+                orderModal.style.display = 'none';
+            }
+
+            // Vider complètement le panier
+            cart.items = [];
+            cart.total = 0;
+            localStorage.removeItem('cart');
+            updateCartDisplay();
+
+            // Réinitialiser les quantités sur l'interface
+            const productCards = document.querySelectorAll('.product-card');
+            productCards.forEach(card => {
+                const quantitySpan = card.querySelector('.quantity');
+                const minusBtn = card.querySelector('.minus');
+                const plusBtn = card.querySelector('.plus');
+                
+                if (quantitySpan) {
+                    quantitySpan.textContent = '0';
+                }
+                
+                // Réinitialiser la variable locale de quantité
+                let quantity = 0;
+            });
+
+            // Afficher le modal de notation
+            if (ratingModal) {
+                ratingModal.style.display = 'block';
+            }
+
+            // Réinitialiser le formulaire
+            orderForm.reset();
+        });
+    }
+
+    // Gestion de la notation
+    const ratingForm = document.getElementById('ratingForm');
+    const stars = document.querySelectorAll('.star');
+    let selectedRating = 0;
+
+    stars.forEach(star => {
+        star.addEventListener('click', function() {
+            selectedRating = parseInt(this.getAttribute('data-rating'));
+            
+            // Mettre à jour le style des étoiles
+            stars.forEach(s => {
+                const rating = parseInt(s.getAttribute('data-rating'));
+                s.classList.toggle('selected', rating <= selectedRating);
+            });
+        });
+    });
+
+    if (ratingForm) {
+        ratingForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const reviewName = document.getElementById('review-name').value;
+            const comment = document.getElementById('comment').value;
+
+            console.log('Avis soumis:', {
+                rating: selectedRating,
+                name: reviewName,
+                comment: comment
+            });
+
+            // Fermer le modal de notation
+            ratingModal.style.display = 'none';
+
+            // Réinitialiser le formulaire
+            ratingForm.reset();
+            stars.forEach(s => s.classList.remove('selected'));
+        });
+    }
+
+    // Fermeture des modaux
+    const closeModalButtons = document.querySelectorAll('.close-modal');
+    closeModalButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const modal = btn.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const phoneInput = document.getElementById('phone');
+    
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Supprimer tous les caractères non numériques
+            let phoneNumber = this.value.replace(/\D/g, '');
+            
+            // Limiter à 10 chiffres
+            phoneNumber = phoneNumber.slice(0, 10);
+            
+            // Formater avec des espaces tous les 2 chiffres
+            if (phoneNumber.length > 0) {
+                let formatted = '';
+                for (let i = 0; i < phoneNumber.length; i += 2) {
+                    formatted += phoneNumber.slice(i, i + 2) + (i + 2 < phoneNumber.length ? ' ' : '');
+                }
+                this.value = formatted.trim();
+            }
+        });
+    }
 });
